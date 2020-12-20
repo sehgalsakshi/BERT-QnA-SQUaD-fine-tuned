@@ -95,7 +95,18 @@ def create_inputs_targets(squad_examples):
     y = [dataset_dict["start_token_idx"], dataset_dict["end_token_idx"]]
     return x, y
 
-def predict(context, question):
+def initialize_model():
+	print('initializing model')
+	json_file = open('model.json', 'r')
+	loaded_model_json = json_file.read()
+	json_file.close()
+	model = model_from_json(loaded_model_json, custom_objects={'KerasLayer': hub.KerasLayer})
+	#load weights into new model
+	model.load_weights("weights.h5")
+	return model
+	
+def predict(context, question, model):
+    pred_ans = None
     data = {"data":
     [
         {"title": "Prediction",
@@ -118,7 +129,6 @@ def predict(context, question):
         offsets = test_sample.context_token_to_char
         start = np.argmax(start)
         end = np.argmax(end)
-        pred_ans = None
         if start >= len(offsets):
             continue
         pred_char_start = offsets[start][0]
@@ -127,4 +137,5 @@ def predict(context, question):
         else:
             pred_ans = test_sample.context[pred_char_start:]
         print("Q: " + test_sample.question)
-        print("A: " + pred_ans if pred_ans is not None else 'Cannot be determined from given context')
+        print("A: " + pred_ans if pred_ans is not None and pred_ans != '' else 'Cannot be determined from given context')
+    return pred_ans if pred_ans is not None and pred_ans != '' else 'Cannot be determined from given context'
